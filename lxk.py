@@ -1,5 +1,4 @@
 import requests
-
 def translate():
     s = input(":")
     dat = {
