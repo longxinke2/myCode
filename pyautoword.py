@@ -4,57 +4,171 @@ import sqlalchemy
 import math
 import functools
 import numpy
+import pandas as pd
 from IPython.display import clear_output
+from decimal import Decimal
+import keyboard
+from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH  #设置对象居中、对齐等。
+from docx.enum.text import WD_TAB_ALIGNMENT,WD_TAB_LEADER,WD_LINE_SPACING  #设置制表符等
+from docx.shared import Inches   #设置图像大小
+from docx.shared import Pt,Cm   #设置像素、缩进等
+from docx.shared import RGBColor    #设置字体颜色
+from docx.shared import Length    #设置宽度
+from docx.oxml.ns import qn  #设置中文版式
+from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+from docx.enum.table import WD_ALIGN_VERTICAL
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+
+def add_head(num,content):
+    document.add_heading('',level = num).add_run(content)
+
+def save_doc():
+    return document
+    
+def read_doc(path):
+    try:
+        document=Document(path)
+    except:
+        raise Exception('路径似乎出错了')
+
+def get_3_data(xxmc,year,string):
+    conn = get_yjy_db('dw_database')
+    sql = ''
+    if string=='派遣':
+        sql =f"SELECT * FROM dw_s_employment_auto where xxmc = '{xxmc}' and substring(bynd,1,4) = '{year}'"
+    if string=='单位调研':
+        sql =f"SELECT * FROM dw_{year}_c_short_survey_auto where dy_xxmc = '{xxmc}' "
+    if string=='学生调研':
+        sql =f"SELECT * FROM dw_{year}_s_short_survey_auto where dy_xxmc = '{xxmc}' "
+    if sql=='':
+        raise Exception('请输入正确的数据类型')
+    data = pd.read_sql(sql=sql, con=conn)
+    return data
+
+def data2table(document,data):
+    table = document.add_table(rows=data.shape[0],cols=data.shape[1],style="表格-全部")#建立表格
+    for i in range(data.shape[0]):
+        for j in range(data.shape[1]):
+            if str(data.iloc[i, j])=='left':
+                table.cell(i,j).merge(table.cell(i,j-1))
+                continue
+            if str(data.iloc[i, j])=='up':
+                table.cell(i,j).merge(table.cell(i-1,j))
+                continue
+            table.cell(i,j).text = str(data.iloc[i, j])
+    # table.alignment = WD_TABLE_ALIGNMENT.CENTER   #设置整个表格居中
+    table.cell(0,0).merge(table.cell(1,0))
+    #调整单元格内部的格式
+    for a in table.rows:
+        a.height = Cm(0.5)
+        for b in a.cells:
+            b.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+            b.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+            for c in b.paragraphs:
+                c.paragraph_format.first_line_indent = Pt(0)
+                c.paragraph_format.alignment=WD_ALIGN_PARAGRAPH.CENTER
+                c.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER 
+                c.paragraph_format.line_spacing=1
+                c.paragraph_format.space_before=Pt(0)
+                c.paragraph_format.space_after=Pt(0)
+                for item in c.runs:
+                    item.font.name = 'Times New Roman'  # 英文字体设置
+                    item._element.rPr.rFonts.set(qn('w:eastAsia'), '宋体')
+                    item.font.size=Pt(9)
+                    item.font.no_proof=True
+                    item.font.no_proof=True#无视系统检索报错的下划线
+    document.add_paragraph().add_run('')#增加空行
+    return document
+def admin():
+    while True:
+        keyboard.wait('F2')
+        global baba
+        baba = not baba
+        clear_output()
+        print(baba and '开发者模式已开启，我将以高达形态出击！' or '已关闭开发者模式')
 
 def L(string):
     try:
         return index_dict[string]
     except:
-        return index_dict.get(string) or 'sb'
+        keys = {v: k for k, v in index_dict.items()}  # 创建反向查找的字典
+        key = keys.get(string)  # 查找该值对应的键
+        if key is None:
+            raise Exception('没有这个字段')
+        return key
 
-def get_group_order_table(data,string,other_groupby):
+# 对data按照string分组+对行排序
+def get_group_order_table(data,string):
     # 获取分组数据
+    other_groupby = baba and L(input('输入额外的分组维度') or '学历') or ''
     data1 = groupby_data(data,string,other_groupby)
-    print(data1.to_markdown())
-    # 排序
-    group = {'default':'默认排序','xy':f'按照给定的{L(string)}顺序排序','num_down':'按照人数降序','num_up':'按照人数升序'}
-    result = get_order_way('排序规则：',group)
-    data1 = order_table(data1,result,string,group)
-    if not data1:
-        return 
-    clear_output()  # 清除输出
+    if baba:
+        print(data1.to_markdown())
+        # 排序
+        group = {'default':'默认排序','super':f'按照给定的{L(string)}顺序排序','num_down':'按照人数降序','num_up':'按照人数升序'}
+        result = get_order_way('排序规则：',group)
+        data1 = order_table(data1,result,string,group)
+        if data1 is None:
+            return 
+        clear_output()  # 清除输出
+    # 加总计行和title
+    data2 = pd.DataFrame({x:[L(string)] if x==string else 'num' in x and ['人数'] or ['占比'] for x in data1.columns})
+    if other_groupby=='xl':
+        group = {'本':'本科毕业生','硕':'硕士毕业生','研':'硕士毕业生','博':'博士毕业生','专':'专科毕业生'}
+        f = lambda y: list(filter(lambda x:x in y,list(group.keys()))) and group[list(filter(lambda x:x in y,list(group.keys())))[0]] or '全体毕业生'
+        dict2={x:[L(string),'up'] if x==string else 'num' in x and [f(x),'人数'] or ['left','占比'] for x in data1.columns}
+        data2 = pd.DataFrame(dict2)
+    dict3={x:'总计' if x==string else 'num' in x and [data1[x].sum()] or ['100.00%'] for x in data1.columns}
+    data3 = pd.DataFrame(dict3)
+    data1 = pd.concat([data2,data1,data3], ignore_index=True)
+    data1.replace(0,'-',inplace=True)
     print(data1.to_markdown())
     return data1
 
-def groupby_data(data,string,other_groupby):
+def change_to_decimal(x):
+    return str(Decimal(x).quantize(Decimal("0.00")))
+
+# 对data按照string分组
+def groupby_data(data,string,other_groupby): 
     data1 = data.groupby(string)['xxdm'].count().reset_index(name='num')  # 计算组别数量
     sum_counts = data1['num'].sum()  # 计算所有组别数量的总和
-    data1['proportion'] = round(data1['num']*100 / sum_counts,2).astype(str)+'%'   # 计算占比并添加到新列中
+    data1['proportion'] = data1['num']*100 / sum_counts
+    data1['proportion'] = data1['proportion'].apply(lambda x: change_to_decimal(x))+'%'   # 计算占比
     if len(other_groupby)!=0:
         data2 = data.groupby([string,other_groupby])['xxdm'].count().reset_index(name='num')  # 计算组别数量
         sum_counts = data2['num'].sum()  # 计算所有组别数量的总和
-        data2['proportion'] = round(data2['num']*100 / sum_counts,2).astype(str)+'%'   # 计算占比并添加到新列中
-        for i in data2[other_groupby].unique():
+        data2['proportion'] = data2['num']*100 / sum_counts
+        data2['proportion'] = data2['proportion'].apply(lambda x: change_to_decimal(x))+'%'   # 计算占比
+        group = data2[other_groupby].unique()
+        if other_groupby=='xl':
+            group = sorted(group,key=lambda x: ('本' in x, '硕' in x, '博' in x),reverse=True)
+        for i in group:
             data3 = data2[data2[other_groupby]==i]
             data3.columns = [string,i,f'{i}_num',f'{i}_proportion']
             data1 = data1.merge(data3,how='left',on=string)
+        # 转化为int
         for i in data1.columns:
             if 'num' in i:
                 data1[i] = data1[i].apply(lambda x: not math.isnan(x) and int(x) or 0)
         data1.drop(data2[other_groupby].unique(),axis=1,inplace=True)
 #         data1.columns=[string]+[j+str(i) for i in range(len(data2[other_groupby].unique())+1) for j in ['num', 'proportion']]
-    data1.replace(numpy.nan,'-',inplace=True)#nan值替换成'-'
-    data1.replace(0,'-',inplace=True)
-    return data1.reindex(columns=data1.columns.tolist()[:1]+data1.columns.tolist()[3:]+data1.columns.tolist()[1:3])
+    data1.replace(numpy.nan,0,inplace=True)#nan值替换成0
+    data1 = data1.reindex(columns=data1.columns.tolist()[:1]+data1.columns.tolist()[3:]+data1.columns.tolist()[1:3])
+    return data1
 
+# 连接研究院数据库
 def get_yjy_db(db):
     return sqlalchemy.create_engine(f"mysql+pymysql://yjy_user:Yjy123456@am-wz9el267w54i2r7ip131930o.ads.aliyuncs.com:3306/{db}")
 
+# 对table的行按照排序选择的result排序
 def order_table(table,result,string,group={}):
     a = list(filter(lambda x:group[x]==result,group.keys()))
     if len(a)==0:
         return table
-    if a[0]=='xy' :
+    if a[0]=='super' :
         xy_order_str = input('请输入排序规则：')
         list1 = []
         try:
@@ -72,6 +186,7 @@ def order_table(table,result,string,group={}):
         table.sort_values(by='num',inplace=True)
     return table
 
+# 完美百分数
 def sum100(arr):
     # 使用哈希表记录每个元素出现的次数
     freq = {}
@@ -154,7 +269,7 @@ class btnFrame(wx.Frame):
         self.Show()
         self.SetWindowStyle(wx.DEFAULT_FRAME_STYLE | wx.STAY_ON_TOP)
         
-
+# 弹出frame获取排序选择
 def get_order_way(title,btn_group):
     try:
         del app
@@ -169,10 +284,14 @@ def get_order_way(title,btn_group):
     app.MainLoop()
     return selection_value
 
+# 全局变量
+baba = True
+document = ''
+
 # 字典
 index_dict = {
             #基础指标
-            'myd':'满意','ppd':'匹配','xgd':'相关','tjd':'愿意','gzd':'关注','xb':'性别','yx':'院系','zy':'专业','sysf':'生源省份',
+            'myd':'满意','ppd':'匹配','xgd':'相关','tjd':'愿意','gzd':'关注','xb':'性别','xl':'学历','yx':'学院','zy':'专业','sysf':'生源省份',
             'mz':'民族','jyq':'乐观','zqj':'乐观','zsp':'满意','jjx':'满意','lzt':'乐观','sjy':'满意','yjy':'满意','ljy':'满意',
             #派遣数据
             'sxgxlx':'升学院校类型','sxgxbq':'升学院校层次',
