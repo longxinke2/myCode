@@ -20,7 +20,15 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from docx.enum.table import WD_ALIGN_VERTICAL
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+import win32com.client
 
+def open_word(path):
+    # 创建Word应用程序对象
+    word = win32com.client.Dispatch('Word.Application')
+    word.Visible = True
+    # 打开文档(注意不要有其他的word才会跳转，需要其他的word用wps打开)
+    doc = word.Documents.Open(path)
+    word.WindowState = 3
 
 def add_head(num,content):
     document.add_heading('',level = num).add_run(content)
