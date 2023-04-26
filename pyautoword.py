@@ -42,15 +42,16 @@ def read_doc(path):
     except:
         raise Exception('路径似乎出错了')
 
-def get_3_data(xxmc,year,string):
+def get_3_data(xxmc,year,string,type1=''):
     conn = get_yjy_db('dw_database')
     sql = ''
+    type2 = type1 and f'_{type1}_province' or type1
     if string=='派遣':
         sql =f"SELECT * FROM dw_s_employment_auto where xxmc = '{xxmc}' and substring(bynd,1,4) = '{year}'"
     if string=='单位调研':
-        sql =f"SELECT * FROM dw_{year}_c_short_survey_auto where dy_xxmc = '{xxmc}' "
+        sql =f"SELECT * FROM dw_{year}_c_short{type2}_survey_auto where dy_xxmc = '{xxmc}' "
     if string=='学生调研':
-        sql =f"SELECT * FROM dw_{year}_s_short_survey_auto where dy_xxmc = '{xxmc}' "
+        sql =f"SELECT * FROM dw_{year}_s_short{type2}_survey_auto where dy_xxmc = '{xxmc}' "
     if sql=='':
         raise Exception('请输入正确的数据类型')
     data = pd.read_sql(sql=sql, con=conn)
@@ -297,7 +298,8 @@ baba = True
 document = ''
 
 # 字典
-index_dict = {
+index_dict = {# 其他：
+            '湖南':'hunan','贵州':'guizhou',
             #基础指标
             'myd':'满意','ppd':'匹配','xgd':'相关','tjd':'愿意','gzd':'关注','xb':'性别','xl':'学历','yx':'学院','zy':'专业','sysf':'生源省份',
             'mz':'民族','jyq':'乐观','zqj':'乐观','zsp':'满意','jjx':'满意','lzt':'乐观','sjy':'满意','yjy':'满意','ljy':'满意',
