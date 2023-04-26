@@ -66,8 +66,11 @@ def decode():
                     label=None
                 )
             )
-            
-            text +=decrypted_plaintext.decode()
+            text1 = decrypted_plaintext.decode()
+            if text1!='end':
+                text +=text1
+            else:
+                text +='\n\t'
         print(text)
     with open("lib/encode.txt", "wb") as file:
         file.write(b'')
