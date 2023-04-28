@@ -3,7 +3,29 @@ from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives import hashes
 from IPython.display import clear_output
+from IPython.display import HTML
+import re
+import pyperclip
+import pyautogui
+import keyboard
+from bs4 import BeautifulSoup
 
+def get_soup(url):
+    headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
+    response = requests.get(url, headers=headers)
+    return BeautifulSoup(response.text,'html.parser')
+
+def shuru(string):
+    while True:
+        keyboard.wait('f2')
+        pyautogui.hotkey('ctrl','a')
+        pyautogui.hotkey('ctrl','c')
+        x=pyperclip.paste()
+        exec(string)
+        pyperclip.copy(x)
+        pyautogui.hotkey('ctrl','v')
+        
 def translate():
     s = input(":")
     dat = {
