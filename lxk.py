@@ -19,10 +19,10 @@ def get_soup(url):
     response.encoding = encoding
     return BeautifulSoup(response.text,'html.parser')
 
-def shuru(string):
+def shuru():
+    string = input("输入要执行的代码用空格分割，x为选中的部分，按f2执行:")
     while True:
-        keyboard.wait('f2')
-        pyautogui.hotkey('ctrl','a')
+        keyboard.wait('ctrl')
         pyautogui.hotkey('ctrl','c')
         x=pyperclip.paste()
         exec(string)
@@ -44,10 +44,10 @@ def is_English():
             return ch
     return True
 
-def progress_bar(text,now,end):
+def progress_bar(now,end,text='',scare=2):
     percent = now*100//end
-    line = '-'*(percent//2)+' '*(50-percent//2)
-    print(f'\r{text}{line}{percent}%',end="")
+    line = '-'*(percent//scare)+' '*((100-percent)//scare)
+    return f'{text}{line}{percent}%'
     
 def encode():
     public_key_bytes = b'-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzVsQAFaz1kTZXPY3Og9x\nlsspWAKXJBqv81Q4DKeL8YP1OOpihA9OYHO2um2GlVVGhlgRxbkIAEWjzelJJb8+\nSvCUm2CDwFuSYNfx7k/i5UeEK1Y7gbCjBalN2PzBuTqcvAeSfexX85Lm+lW3iQw0\nbv1k4ifKabrooq2ILJTNH3NnGjcERO8QiFa6jY5/H3eWo3POknahAX26rhpYMl1X\na/r0cSbI/c4DqzMpd6sGFQkL2DHsVCF2saY+HMPMqQHm+oT903GVAIpw0x0u6p6o\nAf1QIy8uGvZH0ee4YReLJbc80JvyHysZst3lHQu3E/0UV7nxQOPfumNfphFcwE5S\nFwIDAQAB\n-----END PUBLIC KEY-----\n'
