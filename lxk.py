@@ -10,6 +10,28 @@ import pyautogui
 import keyboard
 from bs4 import BeautifulSoup
 import chardet
+from PIL import ImageGrab
+from PIL import Image
+
+def click_image(image_path, confidence=0.95, lag_x=0,lag_y=0,wait=0.2, double=False):
+    # 获取屏幕分辨率
+    screen_width, screen_height = pyautogui.size()
+
+    # 全屏截图
+    screen_image = ImageGrab.grab()
+
+    # 在屏幕截图中查找匹配
+    image=Image.open(image_path)
+    location = pyautogui.locate(image, screen_image, confidence=confidence)
+    if location:
+        time.sleep(wait)
+        location = pyautogui.locate(image, screen_image, confidence=confidence)
+        # 匹配成功，返回位置信息
+        x, y, a, b = location
+        if double==False:
+            pyautogui.click(x+a//2+lag_x, y+b//2+lag_y)
+        else:
+            pyautogui.doubleClick(x+a//2+lag_x, y+b//2+lag_y)
 
 def get_soup(url):
     headers = {
