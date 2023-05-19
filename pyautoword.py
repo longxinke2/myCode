@@ -21,6 +21,7 @@ from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from docx.enum.table import WD_ALIGN_VERTICAL
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 import win32com.client
+import pyautogui
 
 def find_province(y):
     zidian = {'西藏' : '西藏自治区',
@@ -60,6 +61,7 @@ def find_province(y):
     return zidian[list(filter(lambda x:x in y,zidian))[0]]
 
 def open_word(path):
+    # 主要用于查看改动的效果
     # 创建Word应用程序对象
     word = win32com.client.Dispatch('Word.Application')
     word.Visible = True
@@ -70,11 +72,14 @@ def open_word(path):
 def add_head(num,content):
     document.add_heading('',level = num).add_run(content)
 
-def save_doc():
-    return document
+def save_doc(dc_path,look=False):
+    global document
+    document.save(dc_path)
+    if look:open_word(dc_path)
     
 def read_doc(path):
     try:
+        global document
         document=Document(path)
     except:
         raise Exception('路径似乎出错了')
@@ -94,7 +99,8 @@ def get_3_data(xxmc,year,string,type1=''):
     data = pd.read_sql(sql=sql, con=conn)
     return data
 
-def data2table(document,data):
+def data2table(data):
+    global document
     table = document.add_table(rows=data.shape[0],cols=data.shape[1],style="表格-全部")#建立表格
     for i in range(data.shape[0]):
         for j in range(data.shape[1]):
@@ -106,7 +112,7 @@ def data2table(document,data):
                 continue
             table.cell(i,j).text = str(data.iloc[i, j])
     # table.alignment = WD_TABLE_ALIGNMENT.CENTER   #设置整个表格居中
-    table.cell(0,0).merge(table.cell(1,0))
+#     table.cell(0,0).merge(table.cell(1,0))
     #调整单元格内部的格式
     for a in table.rows:
         a.height = Cm(0.5)
@@ -127,14 +133,13 @@ def data2table(document,data):
                     item.font.no_proof=True
                     item.font.no_proof=True#无视系统检索报错的下划线
     document.add_paragraph().add_run('')#增加空行
-    return document
+    
 def admin():
     while True:
         keyboard.wait('F2')
         global baba
         baba = not baba
-        clear_output()
-        print(baba and '开发者模式已开启，我将以高达形态出击！' or '已关闭开发者模式')
+        pyautogui.alert(baba and '开发者模式已开启，我将以高达形态出击！' or '已关闭开发者模式')
 
 def L(string):
     try:
@@ -147,7 +152,7 @@ def L(string):
         return key
 
 # 对data按照string分组+对行排序
-def get_group_order_table(data,string):
+def get_group_order_table(data,string,order=True,need_sum=True):
     # 获取分组数据
     other_groupby = baba and L(input('输入额外的分组维度') or '学历') or ''
     data1 = groupby_data(data,string,other_groupby)
@@ -160,25 +165,32 @@ def get_group_order_table(data,string):
         if data1 is None:
             return 
         clear_output()  # 清除输出
+    else:
+        if order:
+            data1.sort_values(by='num',inplace=True)
     # 加总计行和title
-    data2 = pd.DataFrame({x:[L(string)] if x==string else 'num' in x and ['人数'] or ['占比'] for x in data1.columns})
-    if other_groupby=='xl':
-        group = {'本':'本科毕业生','硕':'硕士毕业生','研':'硕士毕业生','博':'博士毕业生','专':'专科毕业生'}
-        f = lambda y: list(filter(lambda x:x in y,list(group.keys()))) and group[list(filter(lambda x:x in y,list(group.keys())))[0]] or '全体毕业生'
-        dict2={x:[L(string),'up'] if x==string else 'num' in x and [f(x),'人数'] or ['left','占比'] for x in data1.columns}
-        data2 = pd.DataFrame(dict2)
-    dict3={x:'总计' if x==string else 'num' in x and [data1[x].sum()] or ['100.00%'] for x in data1.columns}
-    data3 = pd.DataFrame(dict3)
-    data1 = pd.concat([data2,data1,data3], ignore_index=True)
-    data1.replace(0,'-',inplace=True)
-    print(data1.to_markdown())
+    if need_sum:
+        data2 = pd.DataFrame({x:[L(string)] if x==string else 'num' in x and ['人数'] or ['占比'] for x in data1.columns})
+        if other_groupby=='xl':
+            group = {'本':'本科毕业生','硕':'硕士毕业生','研':'硕士毕业生','博':'博士毕业生','专':'专科毕业生'}
+            f = lambda y: list(filter(lambda x:x in y,list(group.keys()))) and group[list(filter(lambda x:x in y,list(group.keys())))[0]] or '全体毕业生'
+            dict2={x:[L(string),'up'] if x==string else 'num' in x and [f(x),'人数'] or ['left','占比'] for x in data1.columns}
+            data2 = pd.DataFrame(dict2)
+        dict3={x:'总计' if x==string else 'num' in x and [data1[x].sum()] or ['100.00%'] for x in data1.columns}
+        data3 = pd.DataFrame(dict3)
+        data1 = pd.concat([data2,data1,data3], ignore_index=True)
+        data1.replace(0,'-',inplace=True)
+        print(data1.to_markdown())
     return data1
 
+
+
+####################################以下为中间函数，请勿使用######################################################################
 def change_to_decimal(x):
     return str(Decimal(x).quantize(Decimal("0.00")))
 
 # 对data按照string分组
-def groupby_data(data,string,other_groupby): 
+def groupby_data(data,string,other_groupby=''): 
     data1 = data.groupby(string)['xxdm'].count().reset_index(name='num')  # 计算组别数量
     sum_counts = data1['num'].sum()  # 计算所有组别数量的总和
     data1['proportion'] = data1['num']*100 / sum_counts
@@ -330,7 +342,7 @@ def get_order_way(title,btn_group):
     app.MainLoop()
     return selection_value
 
-# 全局变量
+####################################################### 全局变量##############################################################
 baba = True
 document = ''
 
