@@ -101,7 +101,7 @@ def decode():
         private_key_bytes,
         password=None
     )
-    with open("lib/encode.txt", "rb") as file:
+    with open("myCode/lib/encode.txt", "rb") as file:
         ciphertext = file.read()  # 读取二进制字符串
         text=''
         for i in range(int(len(ciphertext)/256)):
@@ -119,6 +119,6 @@ def decode():
             else:
                 text +='\n\t'
         print(text)
-    with open("lib/encode.txt", "wb") as file:
+    with open("myCode/lib/encode.txt", "wb") as file:
         file.write(b'')
  
