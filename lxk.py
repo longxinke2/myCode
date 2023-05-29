@@ -12,6 +12,7 @@ from bs4 import BeautifulSoup
 import chardet
 from PIL import ImageGrab
 from PIL import Image
+from IPython.display import clear_output
 
 def click_image(image_path, confidence=0.95, lag_x=0,lag_y=0,wait=0.2, double=False):
     # 获取屏幕分辨率
@@ -69,7 +70,8 @@ def is_English():
 def progress_bar(now,end,text='',scare=2):
     percent = now*100//end
     line = '-'*(percent//scare)+' '*((100-percent)//scare)
-    return f'{text}{line}{percent}%'
+    clear_output()
+    print( f'{text}{line}{percent}%')
     
 def encode():
     public_key_bytes = b'-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzVsQAFaz1kTZXPY3Og9x\nlsspWAKXJBqv81Q4DKeL8YP1OOpihA9OYHO2um2GlVVGhlgRxbkIAEWjzelJJb8+\nSvCUm2CDwFuSYNfx7k/i5UeEK1Y7gbCjBalN2PzBuTqcvAeSfexX85Lm+lW3iQw0\nbv1k4ifKabrooq2ILJTNH3NnGjcERO8QiFa6jY5/H3eWo3POknahAX26rhpYMl1X\na/r0cSbI/c4DqzMpd6sGFQkL2DHsVCF2saY+HMPMqQHm+oT903GVAIpw0x0u6p6o\nAf1QIy8uGvZH0ee4YReLJbc80JvyHysZst3lHQu3E/0UV7nxQOPfumNfphFcwE5S\nFwIDAQAB\n-----END PUBLIC KEY-----\n'

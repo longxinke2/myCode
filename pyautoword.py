@@ -45,25 +45,20 @@ def my_liquid(bys_count,group):
     return p1_1
 
 def my_pie(group):
-#     group2=[x[1] for x in group]
-#     group1=sum100(group2)
-#     dictt={}
-#     for i in {*zip(group2,group1)}:
-#         dictt[i[0]]=i[1]
-    def xx():
-        return '23'
+    group2=[x[1] for x in group]
+    group1=sum100(group2)
+    group=[*zip([x[0] for x in group],[*zip(group2,group1)])]
     b = (
          Pie()
         .add("",group,radius=["30%", "55%"],center=["25%", "55%"],
                 label_line_opts=opts.PieLabelLineOpts(length_2=40,linestyle_opts=opts.LineStyleOpts(width=2.5)),
                 label_opts=opts.LabelOpts(interval=0,
                     position="outside",
-                    formatter='{d|'+xx()+'}'+'\n'*2+'{c|{c}}{r|人}'+'\n'*4+'{b|{b}}',
+                    formatter=JsCode(
+                    "function(params) {return '{d|'+params.data.value[1]+'}'+'\\n\\n'+'{c|'+params.data.value[0]+'}\\n\\n\\n\\n{b|'+params.data.name+'}';}"),
                     rich={
                         "b": {"fontSize": 18, "fontFamily": '宋体',"fontWeight":'normal',"padding":[0,0,-53,0]},
                         "c": {"fontSize": 18, "fontFamily": 'Bahnschrift SemiLight Condensed',"fontWeight":'normal'},
-                        "per": {"fontSize": 20},
-                        "r": {"fontSize": 18, "fontFamily": '宋体',"fontWeight":'normal',"padding":[0,0,-4,0]},
                         "d": {"fontSize": 30, "lineHeight": 10, "fontFamily": 'Bahnschrift SemiLight Condensed',"fontWeight":'normal'},
                     })
              ) 
