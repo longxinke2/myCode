@@ -151,8 +151,9 @@ def find_province(y):
  '安徽' :'安徽省'}
     return zidian[list(filter(lambda x:x in y,zidian))[0]]
 
-def write_zw(content):#传入一个字符串格式，将你要写的题注或者图注放入即可
+def write_zw(content,is_show=False):#传入一个字符串格式，将你要写的题注或者图注放入即可
     document.add_paragraph(content,style='正文段落文本')
+    if not is_show:print(content)
     
 def write_tz(content):#传入一个字符串格式，将你要写的题注或者图注放入即可
     document.add_paragraph(content,style='标准题注')
@@ -250,10 +251,10 @@ def L(string):
         return key
 
 # 对data按照string分组+对行排序
-def get_group_order_table(data,string,other_groupby=False,order=True,need_sum=True):
+def get_group_order_table(data,string,string1='',other_groupby='',order=True,need_sum=True):
     # 获取分组数据
     other_groupby = other_groupby or (baba and L(input('输入额外的分组维度') or '学历') or '')
-    data1 = groupby_data(data,string,other_groupby)
+    data1 = groupby_data(data,string,string1,other_groupby)
     if baba:
         display(data1)
         # 排序
@@ -265,7 +266,7 @@ def get_group_order_table(data,string,other_groupby=False,order=True,need_sum=Tr
         clear_output()  # 清除输出
     else:
         if order:
-            data1.sort_values(by='num',inplace=True,ascending=False)
+            data1.sort_values(by=('num' if string1=='' else [string1,'num']),inplace=True,ascending=False)
     # 加总计行和title
     if need_sum:
         data2 = pd.DataFrame({x:[L(string)] if x==string else 'num' in x and ['人数'] or ['占比'] for x in data1.columns})
@@ -336,28 +337,27 @@ def change_to_decimal(x):
     return str(Decimal(x).quantize(Decimal("0.00")))
 
 # 对data按照string分组
-def groupby_data(data,string,other_groupby=''): 
-    data1 = data.groupby(string)['xxdm'].count().reset_index(name='num')  # 计算组别数量
-#     sum_counts = data1['num'].sum()  # 计算所有组别数量的总和
+def groupby_data(data,string,string1='',other_groupby=''): 
+    groupt= [string,string1] if len(string1)!=0 else [string]
+    data1 = data.groupby(groupt)['xxdm'].count().reset_index(name='num')  # 计算组别数量
     data1['proportion'] = sum100(data1['num'].tolist())   # 计算占比
-    if len(other_groupby)!=0:
-        data2 = data.groupby([string,other_groupby] if isinstance(string,str) else string+[other_groupby])['xxdm'].count().reset_index(name='num')  # 计算组别数量
+    if other_groupby!='':
+        data2 = data.groupby(groupt+[other_groupby])['xxdm'].count().reset_index(name='num')  
         group = data2[other_groupby].unique()
         if other_groupby=='xl':
-            group = sorted(group,key=lambda x: ('本' in x, '硕' in x, '博' in x),reverse=True)
+            group = sorted(group,key=lambda x: ('本' in x, '研' in x, '专' in x),reverse=True)
         for i in group:
             data3 = data2[data2[other_groupby]==i]
             data3['proportion'] = sum100(data3['num'].tolist())  # 计算占比
-            data3.columns = [string,i,f'{i}_num',f'{i}_proportion']
-            data1 = data1.merge(data3,how='left',on=string)
+            data3.columns = groupt+[i,f'{i}_num',f'{i}_proportion']
+            data1 = data1.merge(data3,how='left',on=groupt)
         # 转化为int
         for i in data1.columns:
             if 'num' in i:
                 data1[i] = data1[i].apply(lambda x: not math.isnan(x) and int(x) or 0)
         data1.drop(data2[other_groupby].unique(),axis=1,inplace=True)
-#         data1.columns=[string]+[j+str(i) for i in range(len(data2[other_groupby].unique())+1) for j in ['num', 'proportion']]
     data1.replace(numpy.nan,0,inplace=True)#nan值替换成0
-    data1 = data1.reindex(columns=data1.columns.tolist()[:1]+data1.columns.tolist()[3:]+data1.columns.tolist()[1:3])
+    data1 = data1.reindex(columns=data1.columns.tolist()[:len(groupt)]+data1.columns.tolist()[len(groupt)+2:]+data1.columns.tolist()[len(groupt):len(groupt)+2])
     return data1
 
 # 连接研究院数据库
