@@ -72,9 +72,12 @@ def progress_bar(now,end,text='',scare=2):
     line = '-'*(percent//scare)+' '*((100-percent)//scare)
     return f'{text}{line}{percent}%'
     
-def encode():
+def encode(clear=False):
     public_key_bytes = b'-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzVsQAFaz1kTZXPY3Og9x\nlsspWAKXJBqv81Q4DKeL8YP1OOpihA9OYHO2um2GlVVGhlgRxbkIAEWjzelJJb8+\nSvCUm2CDwFuSYNfx7k/i5UeEK1Y7gbCjBalN2PzBuTqcvAeSfexX85Lm+lW3iQw0\nbv1k4ifKabrooq2ILJTNH3NnGjcERO8QiFa6jY5/H3eWo3POknahAX26rhpYMl1X\na/r0cSbI/c4DqzMpd6sGFQkL2DHsVCF2saY+HMPMqQHm+oT903GVAIpw0x0u6p6o\nAf1QIy8uGvZH0ee4YReLJbc80JvyHysZst3lHQu3E/0UV7nxQOPfumNfphFcwE5S\nFwIDAQAB\n-----END PUBLIC KEY-----\n'
-
+    if clear:
+        with open("lib/encode.txt", "wb") as file:
+            file.write(b'')
+        return
     # 读取公钥
     public_key = serialization.load_pem_public_key(
         public_key_bytes

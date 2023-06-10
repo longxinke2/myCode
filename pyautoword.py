@@ -33,51 +33,216 @@ from pyecharts.options import ComponentTitleOpts
 import seaborn as sns
 import matplotlib.pyplot as plt
 from IPython.display import display
+from pyautogui import alert as printw
+
+def bxwl2(x_group,y_group,max_n):#y_group是生源人数，落实人数，落实率
+    p1 = (
+        PictorialBar()                       #象形柱状图
+        .add_xaxis(x_group)  #x轴
+        .add_yaxis(
+            "生源人数",              #系列名字
+            y_group[0], #数据
+            label_opts=opts.LabelOpts(is_show=True,
+                                      formatter = "{c|{c}人}",rich={"c": {"fontSize": 21, "fontFamily": 'Times New Roman',"padding":[0,0,0,-60],},}), #数值标签
+            symbol_size=40,              #每个图标的大小，重复图表则设置，不重复（类似山峰图）则去掉     
+            symbol_repeat= True,        #是否重复图标
+            is_symbol_clip=True,        #是否裁剪图标
+            symbol=bd,                  #图标path
+            symbol_offset=[-30, 0],
+            color=f'{color_2}',
+            yaxis_index=0)
+        .add_yaxis(
+            "落实人数",              #系列名字
+            y_group[1], #数据
+            label_opts=opts.LabelOpts(is_show=True,
+                                      formatter = "{c|{c}人}",rich={"c": {"fontSize": 21, "fontFamily": 'Times New Roman',"padding":[0,0,0,70],},}), #数值标签
+            symbol_size=40,              #每个图标的大小，重复图表则设置，不重复（类似山峰图）则去掉     
+            symbol_repeat= True,        #是否重复图标
+            is_symbol_clip=True,        #是否裁剪图标
+            symbol=bd,                  #图标path
+            symbol_offset=[30, 0],
+            color=f'{color_1}',
+            yaxis_index=0)
+        .set_global_opts(yaxis_opts=opts.AxisOpts(max_=max_n*2,is_show = False), #去掉Y轴,设置最大轴值
+                         xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(font_size = 21,font_family = '宋体',color = 'black')))#设置坐标轴文字样式               
+        .set_global_opts(legend_opts=opts.LegendOpts(item_width=20,item_height=15,
+                                                     textstyle_opts=opts.TextStyleOpts(font_size = 18,font_family = '宋体')))#调整图例格式
+        .extend_axis(                  #增加扩展轴     
+            yaxis=opts.AxisOpts(
+                name="毕业去向落实率",
+                type_="value",
+                min_=0,
+                max_=100,             #设置次坐标轴最大值
+                position="right",
+                is_show = False
+                )))
+    line = (                         #折线图
+        Line()
+        .add_xaxis(x_group) #x轴
+        .add_yaxis(                  
+            "毕业去向落实率",
+            y_group[2],#数据
+            label_opts=opts.LabelOpts(is_show=True,position='top',background_color=color_1,color='white',
+                                      formatter=JsCode("function (params) {return params.value[1] + '%'}"),
+                                      font_size = 26,font_family = 'Times New Roman'),
+            yaxis_index=1,
+            linestyle_opts=opts.LineStyleOpts(width=0),
+            itemstyle_opts=opts.ItemStyleOpts(color=color_1),symbol='circle',symbol_size=6
+        ))
+    return p1.overlap(line)
+
+def xy(datat,x,x1,y):
+    return datat[datat[x]==x1][y].values[0]
+
+def get_og_name(datat,is_p=False):#og=othergroupby
+    return list(filter(lambda x:(is_p and '_proportion' or '_num') in x,(list(datat.columns))))
+
+def three_word(start,loop_word_group,end):
+    string1=start
+    for j in loop_word_group:
+        string1+=j
+    return string1[:-1]+end
+
+def sum_list(data,ziduan,lst,sum_ziduan):#is_p表示是否对占比求和
+    if 'proportion' in sum_ziduan:
+        return change_to_decimal(sum([change_to_decimal(x,rev=True) for x in data[data[ziduan].isin(lst)][sum_ziduan][data[sum_ziduan]!='-'].tolist()]))
+    return data[data[ziduan].isin(lst)][sum_ziduan][data[sum_ziduan]!='-'].sum()
+
+def bxwl1(x_group,y_group,per):  
+    color_fuc = """
+                    function (params) {
+                        if (params.dataIndex == 0) return """ + f"'{color_2}';" + """if (params.dataIndex == 1)return """ + f"'{color_3}';" +"""
+                        if (params.dataIndex == 2) return """ + f"'{color_4}';" +""" if (params.dataIndex == 3)return """ + f"'{color_5}';" +"""}   
+                   """
+    #柱形图        
+    a = (
+        Bar()
+        .add_xaxis(x_group)
+        .add_yaxis("",y_group,bar_width=35,stack="stack1",
+                    label_opts=opts.LabelOpts(position='top',color=JsCode(color_fuc),formatter='{c}%',font_size = 23,font_family = 'Bahnschrift SemiLight Condensed'),
+                    itemstyle_opts=opts.ItemStyleOpts(color=JsCode(color_fuc)))#设置柱形图样式
+        .set_global_opts(yaxis_opts=opts.AxisOpts(is_show=False),#不显示y轴
+                        xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(font_size = 16,font_family = '宋体'))))
+
+
+    #水波图
+    b = (
+        Liquid()
+        .add("毕业去向落实率", [change_to_decimal(per,True)/100], is_outline_show=False,shape = 'circle',center=["25%", "50%"],is_animation=False,
+             color = [get_lighter_color('#FFFFFF',color_1)[0][2]],background_color=['#FFFFFF'],
+             label_opts=opts.LabelOpts(font_size=25,position="inside",color = color_1,formatter="{c|%s}" % per +'\n'*10+'{d|毕业去向落实率}',
+                                       rich={"c": {"fontSize": 27, "fontFamily": 'Bahnschrift SemiLight Condensed',"fontWeight":'bolder'},
+                                             "d": {"fontSize": 18, "fontFamily": '宋体'}}))
+        .set_series_opts(radius="60%"))
+
+    c = (
+        Liquid()
+        .add("", [1], is_outline_show=False,shape = bd,center=["25%", "50%"],is_animation=False,color = [color_1],
+            label_opts=opts.LabelOpts(is_show=False))
+        .set_series_opts(radius="40%"))
+
+    #组合在一起
+    grid = (
+         Grid(init_opts = opts.InitOpts(height = '350px',width='1000px'))
+        .add(a, grid_opts=opts.GridOpts(pos_left="45%"))
+        .add(b, grid_opts=opts.GridOpts(pos_left=""))
+        .add(c, grid_opts=opts.GridOpts(pos_left=""))
+    )
+    return grid
+
+def reduce_by_1(string):
+    return change_to_decimal(100-float(re.sub('%','',string)))+'%'
+
+# 取data的前三，可自动忽略汇总行和总计行，忽略非数字
+def get_3rd(data,num,not_3=3):#num为倒序排序的依据,不取前三也行
+    datat=data.copy()
+    datat= datat[(datat.iloc[:,0] != '汇总') & (datat.iloc[:,0] != '总计') & (datat.iloc[:,1] != '汇总') & (datat.iloc[:,1] != '总计')]
+    datat['temp']=data.apply(lambda x:0 if isinstance(x[num],str) else x[num],axis=1)
+    datat=datat.sort_values(by='temp',ascending=False).reset_index(drop=True).drop(['temp'],axis=1)
+    return [datat.loc[x].tolist() for x in range(not_3)]
 
 def my_liquid(bys_count,group):
     p1_1 = Liquid()
-    for i in group:
-        formatter="%d"%(i[1])+'人'+'\n'+"%.2f"%(i[1]/bys_count*100)+'%'+'\n'*9+i[0]
-        p1_1.add("", [i[1]/bys_count], is_outline_show=False,shape = eval(L(i[0])),center=i[3],is_animation=False,color = [i[2]],background_color=['#D3D3D3'],
-             label_opts=opts.LabelOpts(font_size=25,position="inside",color = i[2],
+    group1=sum100([x[1] for x in group])
+    for index,i in enumerate(group):
+        if len(group)>1:
+            formatter="%d"%(i[1])+'人'+'\n'+group1[index]+'\n'*9+i[0]
+        else:
+            formatter="%d"%(i[1])+'人'+'\n'+"%.2f"%(i[1]/bys_count*100)+'%'+'\n'*9+i[0]
+        p1_1.add("", [i[1]/bys_count], is_outline_show=False,shape = eval(L(i[0])),center=i[2],is_animation=False,color = [eval(f'color_{index+1}')],background_color='#D3D3D3',
+             label_opts=opts.LabelOpts(font_size=25,position="inside",color = eval(f'color_{index+1}'),
             formatter=f'{formatter}'))
     p1_1.set_series_opts(radius="35%")
     return p1_1
 
-def my_pie(group):
+def my_pie(group,title='',js='',radius=["30%", "55%"],center=["25%", "55%"]):
     group2=[x[1] for x in group]
     group1=sum100(group2)
     group=[*zip([x[0] for x in group],[*zip(group2,group1)])]
     b = (
-         Pie()
-        .add("",group,radius=["30%", "55%"],center=["25%", "55%"],
-                label_line_opts=opts.PieLabelLineOpts(length_2=40,linestyle_opts=opts.LineStyleOpts(width=2.5)),
-                label_opts=opts.LabelOpts(interval=0,
-                    position="outside",
-                    formatter=JsCode(
-                    "function(params) {return '{d|'+params.data.value[1]+'}'+'\\n\\n'+'{c|'+params.data.value[0]+'}\\n\\n\\n\\n{b|'+params.data.name+'}';}"),
-                    rich={
-                        "b": {"fontSize": 18, "fontFamily": '宋体',"fontWeight":'normal',"padding":[0,0,-53,0]},
-                        "c": {"fontSize": 18, "fontFamily": 'Bahnschrift SemiLight Condensed',"fontWeight":'normal'},
-                        "d": {"fontSize": 30, "lineHeight": 10, "fontFamily": 'Bahnschrift SemiLight Condensed',"fontWeight":'normal'},
-                    })
-             ) 
+        Pie()
+        .add(
+            "",group,radius =radius , #radius为饼图的半径，数组的第一项是内半径，第二项是外半
+               center =center )               #设置饼状图位置，第一个百分数调水平位置，第二个百分数调垂直位置
         .set_global_opts(
-            legend_opts=opts.LegendOpts(is_show=False))#去掉图例
+            title_opts=opts.TitleOpts(title = title,pos_left='18%',pos_top='45%',
+                                      title_textstyle_opts=opts.TextStyleOpts(font_size = 21,font_family = '宋体',color=color_1)), #标题字体样式配置项
+            legend_opts=opts.LegendOpts(is_show=False),
+        )
+        .set_series_opts(label_opts=opts.LabelOpts(is_show=False))
     )
+    if js:
+        b = (
+             Pie()
+            .add("",group,radius=radius,center=center,
+                    label_line_opts=opts.PieLabelLineOpts(length_2=40,linestyle_opts=opts.LineStyleOpts(width=2.5)),
+                    label_opts=opts.LabelOpts(interval=0,
+                        position="outside",
+                        formatter=JsCode(
+                        f"function(params) {js}"),
+                        rich={
+                            "b": {"fontSize": 18, "fontFamily": '宋体',"fontWeight":'normal',"padding":[0,0,-53,0]},
+                            "c": {"fontSize": 18, "fontFamily": 'Bahnschrift SemiLight Condensed',"fontWeight":'normal'},
+                            "d": {"fontSize": 30, "lineHeight": 10, "fontFamily": 'Bahnschrift SemiLight Condensed',"fontWeight":'normal'},
+                        })
+                 ) 
+            .set_global_opts(
+                title_opts=opts.TitleOpts(title = title,pos_left='18%',pos_top='45%',
+                                          title_textstyle_opts=opts.TextStyleOpts(font_size = 21,font_family = '宋体',color=color_1)), #标题字体样式配置项
+                legend_opts=opts.LegendOpts(is_show=False))#去掉图例
+        )
     return b
 
+#竖的，多个不同的列
 def my_bar(x_group,y_group):      
     a = Bar().add_xaxis(x_group)
-    for i in y_group:
-        a.add_yaxis(i[0],i[1],bar_width=35,label_opts=opts.LabelOpts(position='top',color=i[2],formatter='{c}',font_size = 23,font_family = 'Bahnschrift SemiLight Condensed'),itemstyle_opts=opts.ItemStyleOpts(color=i[2]))#设置柱形图样式
+    for index,i in enumerate(y_group):
+        a.add_yaxis(i[0],i[1],bar_width=35,label_opts=opts.LabelOpts(position='top',color=eval(f'color_{index+1}'),formatter='{c}',font_size = 23,font_family = 'Bahnschrift SemiLight Condensed'),itemstyle_opts=opts.ItemStyleOpts(color=eval(f'color_{index+1}')))#设置柱形图样式
     a.set_global_opts(yaxis_opts=opts.AxisOpts(is_show=False),xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(font_size = 16,font_family = '宋体')),legend_opts=opts.LegendOpts(pos_right="20%")).set_colors([f'{color_1}',f'{color_2}',f'{color_3}',f'{color_4}',f'{color_5}'])
     return a
 
-def merge_pic(a,b):
+#横的，一个行
+def my_bar2(x_group,y_group):
+    jscode = "function (params) {return params.name" + " + '  ' + params.value + '人'}"
+    b = (
+        Bar()
+        .add_xaxis(x_group)
+        .add_yaxis("",y_group,bar_width=20)
+        .reversal_axis()
+        .set_series_opts(label_opts=opts.LabelOpts(position="right",color=color_2,font_weight='bold',
+                                                   formatter= JsCode(jscode),font_size = 16,font_family = 'Bahnschrift SemiLight Condensed'),
+                         itemstyle_opts=opts.ItemStyleOpts(color=f'{color_2}'))
+        .set_global_opts(xaxis_opts=opts.AxisOpts(is_show=False),
+                         yaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(font_size = 18,font_family = '宋体',color='black'),
+                                                 axisline_opts=opts.AxisLineOpts(linestyle_opts=opts.LineStyleOpts(color=color_2)),
+                                                 axistick_opts=opts.AxisTickOpts(linestyle_opts=opts.LineStyleOpts(color=color_2)))) #设置坐标轴文字样式
+        .set_colors([f'{color_1}',f'{color_2}']))
+    return b
+
+def merge_pic(a,b,height='450px',width='1000px'):
     #组合在一起
     grid = (
-         Grid(init_opts = opts.InitOpts(height = '450px',width='1000px'))
+         Grid(init_opts = opts.InitOpts(height =height ,width=width))
         .add(a, grid_opts=opts.GridOpts(pos_left="50%"))
         .add(b, grid_opts=opts.GridOpts(pos_left="")))
     return grid
@@ -90,7 +255,7 @@ def add_pic(html_path):
     os.remove(html_path)
     os.remove('result/temp.png')
 
-def picture_china_map(data_zip,label_fontsize=13):
+def my_china_map(data_zip,label_fontsize=13):
     color = get_lighter_color('#FFFFFF',color_1)
     a= (
     Map()
@@ -114,7 +279,7 @@ def picture_china_map(data_zip,label_fontsize=13):
     display(a.render_notebook())
     return path
 
-def find_province(y):
+def find_province(y,is_all=True):#is_all 是找全称还是简称
     zidian = {'西藏' : '西藏自治区',
  '内蒙古' : '内蒙古自治区',
  '广西' : '广西壮族自治区' ,
@@ -149,14 +314,15 @@ def find_province(y):
  '陕西' :'陕西省',
  '贵州' :'贵州省',
  '安徽' :'安徽省'}
-    return zidian[list(filter(lambda x:x in y,zidian))[0]]
+    return is_all and zidian[list(filter(lambda x:x in y,zidian))[0]] or list(filter(lambda x:x in y,zidian))[0]
 
 def write_zw(content,is_show=False):#传入一个字符串格式，将你要写的题注或者图注放入即可
     document.add_paragraph(content,style='正文段落文本')
-    if not is_show:print(content)
+    if is_show:print(content)
     
-def write_tz(content):#传入一个字符串格式，将你要写的题注或者图注放入即可
+def write_tz(content,is_show=False):#传入一个字符串格式，将你要写的题注或者图注放入即可
     document.add_paragraph(content,style='标准题注')
+    if is_show:print(content)
 
 def open_word(path):
     # 主要用于查看改动的效果
@@ -171,19 +337,33 @@ def open_word(path):
 def add_head(num,content):
     document.add_heading('',level = num).add_run(content)
 
-def save_doc(dc_path,look=False):
+def sd(look=True):#sd=save doc
+    dc_path='result/test.docx'
     global document
     document.save(dc_path)
     if look:open_word(dc_path)
     
-def read_doc(path):
+def read_doc(moban):
+    path=f'model/{moban}.docx'
+    
+    global color_1
+    global color_2
+    global color_3
+    global color_4
+    global color_5
+    if moban=='红色模板':
+        color_1 = '#147BC5' #主配色
+        color_2 = '#FBB03E' #主配色
+        color_3 = '#24AAE1' #主配色
+        color_4 = '#E3798D' 
+        color_5 = '#00ABCB'
     try:
         global document
         document=Document(path)
     except:
         raise Exception('路径似乎出错了')
 
-def get_3_data(xxmc,year,string,type1=''):
+def get_3_data(xxmc,year,string,type1=''):#type1是省份库标识
     conn = get_yjy_db('dw_database')
     sql = ''
     type2 = type1 and f'_{type1}_province' or type1
@@ -198,8 +378,32 @@ def get_3_data(xxmc,year,string,type1=''):
     data = pd.read_sql(sql=sql, con=conn)
     return data
 
-def add_table(data):
+def get_normal_data(sql,db):
+    conn = get_yjy_db(db)
+    data = pd.read_sql(sql=sql, con=conn)
+    return data
+
+def add_table(data1,need_1st_merge=False):#need_1st_merge:第一列需要合并处理
     global document
+    data=data1.copy()
+    if need_1st_merge:
+        cn=data.columns[0]#cn=columns.name
+        cn1=data.columns[1]
+        mask=(data[cn]!='总计')&((data[cn]==data[cn].shift(1))|(data[cn].shift(1)==L(cn))|(data[cn1].shift(1)=='汇总'))&(data[cn1]!='汇总')
+        lst = mask.tolist()
+        result=[]
+        temp=[]
+        for i in range(len(lst)):
+            if lst[i]:temp.append(i)
+            if not lst[i] and temp:
+                result.append(temp)
+                temp=[]
+        group1=[]
+        for i in get_og_name(data,True)+['proportion']:
+            for j in result:
+                group1.append(change_to_decimal(sum(data.loc[j][i].apply(lambda x:change_to_decimal(x,True)).tolist()))+'%')
+        data.loc[data1[cn1]=='汇总',i]=group1
+
     table = document.add_table(rows=data.shape[0],cols=data.shape[1],style="表格-全部")#建立表格
     for i in range(data.shape[0]):
         for j in range(data.shape[1]):
@@ -209,7 +413,17 @@ def add_table(data):
             if str(data.iloc[i, j])=='up':
                 table.cell(i,j).merge(table.cell(i-1,j))
                 continue
+            if str(data.iloc[i, j])=='汇总':
+                table.cell(i,j).merge(table.cell(i,j-1))
+                table.cell(i,j-1).text = str(data.iloc[i, j-1])+' 汇总'
+                continue
             table.cell(i,j).text = str(data.iloc[i, j])
+    #处理第一列
+    if need_1st_merge:
+        for i in result:
+            if len(i)>1:
+                table.cell(i[0],0).merge(table.cell(i[-1],0))
+                table.cell(i[0],0).text= str(data.iloc[i[0],0])
     # table.alignment = WD_TABLE_ALIGNMENT.CENTER   #设置整个表格居中
 #     table.cell(0,0).merge(table.cell(1,0))
     #调整单元格内部的格式
@@ -238,7 +452,7 @@ def admin():
         keyboard.wait('F2')
         global baba
         baba = not baba
-        pyautogui.alert(baba and '开发者模式已开启，我将以高达形态出击！' or '已关闭开发者模式')
+        printw(baba and '开发者模式已开启，我将以高达形态出击！' or '已关闭开发者模式')
 
 def L(string):
     try:
@@ -251,39 +465,53 @@ def L(string):
         return key
 
 # 对data按照string分组+对行排序
-def get_group_order_table(data,string,string1='',other_groupby='',order=True,need_sum=True):
+def get_group_order_table(data,string,string1='',other_groupby='',order=True,need_sum=True,need_title=True):
     # 获取分组数据
     other_groupby = other_groupby or (baba and L(input('输入额外的分组维度') or '学历') or '')
     data1 = groupby_data(data,string,string1,other_groupby)
+    if string1!='':
+        data4=groupby_data(data,string,other_groupby=other_groupby)
+        data4[string1]='汇总'
+        data1 = pd.concat([data1,data4], ignore_index=True)
+    group = {'default':'默认排序','super':f'按照给定的{L(string)}顺序排序','num_down':'按照人数降序','num_up':'按照人数升序'}
     if baba:
-        display(data1)
         # 排序
-        group = {'default':'默认排序','super':f'按照给定的{L(string)}顺序排序','num_down':'按照人数降序','num_up':'按照人数升序'}
-        result = get_order_way('排序规则：',group)
-        data1 = order_table(data1,result,string,group)
+        if len(xy_order_str)==0:
+            result = get_order_way('排序规则：',group)
+        else:
+            result = f'按照给定的{L(string)}顺序排序'
+        data1 = order_table(data1,result,string,group,string1)
         if data1 is None:
             return 
-        clear_output()  # 清除输出
     else:
-        if order:
-            data1.sort_values(by=('num' if string1=='' else [string1,'num']),inplace=True,ascending=False)
-    # 加总计行和title
-    if need_sum:
-        data2 = pd.DataFrame({x:[L(string)] if x==string else 'num' in x and ['人数'] or ['占比'] for x in data1.columns})
+        #默认按照人数降序
+        result = string=='jylbfl' and '按照给定的就业类别分类顺序排序' or '按照人数降序'
+        data1 = order_table(data1,result,string,group,string1)
+        
+    if need_title:
         if other_groupby=='xl':
-            group = {'本':'本科毕业生','硕':'硕士毕业生','研':'硕士毕业生','博':'博士毕业生','专':'专科毕业生'}
+            group = {'本':'本科毕业生','硕':'毕业研究生','研':'毕业研究生','博':'毕业研究生','专':'专科毕业生'}
             f = lambda y: list(filter(lambda x:x in y,list(group.keys()))) and group[list(filter(lambda x:x in y,list(group.keys())))[0]] or '全体毕业生'
-            dict2={x:[L(string),'up'] if x==string else 'num' in x and [f(x),'人数'] or ['left','占比'] for x in data1.columns}
+            if string1=='':
+                dict2={x:[L(string),'up'] if x==string else 'num' in x and [f(x),'人数'] or ['left','占比'] for x in data1.columns}
+            else:
+                dict2={x:[L(x)] if x==string or x==string1 else 'num' in x and [f(x)] or ['left'] for x in data1.columns}
             data2 = pd.DataFrame(dict2)
-        dict3={x:'总计' if x==string else 'num' in x and [data1[x].sum()] or ['100.00%'] for x in data1.columns}
+        else:
+            data2 = pd.DataFrame({x:[L(string)] if x==string or x==string1 else 'num' in x and ['人数'] or ['占比'] for x in data1.columns})
+        
+    if need_sum:
+        dict3={x:'总计' if x==string else(x==string1 and 'left' or 'num' in x and [data1[x].sum()] or ['100.00%']) for x in data1.columns}
         data3 = pd.DataFrame(dict3)
-        data1 = pd.concat([data2,data1,data3], ignore_index=True)
-        data1.replace(0,'-',inplace=True)
-        clear_output()
-        display(data1)
+        
+    #合并
+    if need_title:data1 = pd.concat([data2,data1], ignore_index=True)
+    if need_sum:data1 = pd.concat([data1,data3], ignore_index=True)
+        
+    data1.replace(0,'-',inplace=True)
+#     clear_output()  # 要不要打印出来自己在外面决定吧
+#     display(data1)
     return data1
-
-
 
 ####################################以下为中间函数，最好不使用######################################################################
 
@@ -333,8 +561,8 @@ def get_lighter_color(*args):
     colors = gradient_color(args)
     return colors[::int(len(colors)/10)][:]
 
-def change_to_decimal(x):
-    return str(Decimal(x).quantize(Decimal("0.00")))
+def change_to_decimal(x,rev=False):#rev=由string转回float
+    return rev and float(re.sub('%','',x)) or str(Decimal(x).quantize(Decimal("0.00")))
 
 # 对data按照string分组
 def groupby_data(data,string,string1='',other_groupby=''): 
@@ -365,26 +593,35 @@ def get_yjy_db(db):
     return sqlalchemy.create_engine(f"mysql+pymysql://yjy_user:Yjy123456@am-wz9el267w54i2r7ip131930o.ads.aliyuncs.com:3306/{db}")
 
 # 对table的行按照排序选择的result排序
-def order_table(table,result,string,group={}):
+def order_table(table,result,string,group={},string1=''):
     a = list(filter(lambda x:group[x]==result,group.keys()))
-    if len(a)==0:
+    if len(a)==0 or a[0]=='default':
         return table
+    table['汇总']=table[string1!='' and string1 or string].apply(lambda x:x=='汇总' and 2 or 1)#string1为空代表不需要汇总，随便搞了
     if a[0]=='super' :
-        xy_order_str = input('请输入排序规则：')
+        if string=='jylbfl':
+            order_str=jylbfl_order_str
+        else:
+            global xy_order_str
+            xy_order_str = xy_order_str if xy_order_str!='' else input('请输入排序规则：')
+            order_str=xy_order_str
         list1 = []
         try:
             for i in list(table[string]):
-                list1.append(re.search(i, xy_order_str).span(0)[0])
+                list1.append(re.search(i, order_str).span(0)[0])
         except:
             print(f'未在表格中找到{L(string)}字段')
+            if string=='xl':xy_order_str=''
             return
         table['order'] = list1
-        table.sort_values(by='order',inplace=True)
+        table.sort_values(by=string1!='' and ['order','汇总'] or 'order',inplace=True)
         table.drop('order',axis=1,inplace=True)
     if a[0]=='num_down':
-        table.sort_values(by='num',inplace=True,ascending=False)
+        table['汇总']=2-table['汇总']
+        table.sort_values(by=string1!='' and [string,'汇总','num'] or 'num',inplace=True,ascending=False)
     if a[0]=='num_up':
-        table.sort_values(by='num',inplace=True)
+        table.sort_values(by=string1!='' and [string,'汇总','num'] or 'num',inplace=True)
+    table.drop('汇总',axis=1,inplace=True)
     return table
 
 # 完美百分数
@@ -493,6 +730,10 @@ def get_order_way(title,btn_group):
 ####################################################### 全局变量##############################################################
 baba = False
 document = ''
+read_doc('红色模板')
+xy_order_str = ''#学院顺序缓存
+jylbfl_order_str = '协议和合同就业继续深造灵活就业自主创业待就业暂不就业'
+
 color_1 = '#147BC5' #主配色
 color_2 = '#FBB03E' #主配色
 color_3 = '#24AAE1' #主配色
@@ -506,7 +747,7 @@ index_dict = {# 其他：
             '湖南':'hunan','贵州':'guizhou','boy':'男生','girl':'女生',
             #基础指标
             'myd':'满意','ppd':'匹配','xgd':'相关','tjd':'愿意','gzd':'关注','xb':'性别','xl':'学历','yx':'学院','zy':'专业','sysf':'生源省份',
-            'mz':'民族','jyq':'乐观','zqj':'乐观','zsp':'满意','jjx':'满意','lzt':'乐观','sjy':'满意','yjy':'满意','ljy':'满意',
+            'mz':'民族','jyq':'乐观','zqj':'乐观','zsp':'满意','jjx':'满意','lzt':'乐观','sjy':'满意','yjy':'满意','ljy':'满意','jylbfl':'就业类别分类','lsbyqx':'毕业去向落实','jylb':'就业类别','jylbfl':'就业类别分类',
             #派遣数据
             'sxgxlx':'升学院校类型','sxgxbq':'升学院校层次',
             #分数指标
