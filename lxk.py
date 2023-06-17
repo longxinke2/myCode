@@ -13,6 +13,18 @@ import chardet
 from PIL import ImageGrab
 from PIL import Image
 from IPython.display import clear_output
+import win32com.client
+import os
+
+def open_zb():
+    # 主要用于查看改动的效果
+    # 创建Word应用程序对象
+    path='lib/研究院工作周报-龙辛柯.xlsx'
+    excel = win32com.client.Dispatch('Excel.Application')
+    excel.Visible = True
+    path=os.path.abspath(path)# 不知道为什么当前路径不行，要完整路径
+    workbook = excel.Workbooks.Open(path)
+    workbook.Activate() # 置于所有应用之前
 
 def click_image(image_path, confidence=0.95, lag_x=0,lag_y=0,wait=0.2, double=False):
     # 获取屏幕分辨率
@@ -42,15 +54,14 @@ def get_soup(url):
     response.encoding = encoding
     return BeautifulSoup(response.text,'html.parser')
 
-def shuru():
-    string = input("输入要执行的代码用空格分割，x为选中的部分，按f2执行:")
-    while True:
-        keyboard.wait('ctrl')
-        pyautogui.hotkey('ctrl','c')
-        x=pyperclip.paste()
-        exec(string)
-        pyperclip.copy(x)
-        pyautogui.hotkey('ctrl','v')
+def ctrl_a():
+    pyautogui.hotkey('ctrl','a')
+    pyautogui.hotkey('ctrl','c')
+    return pyperclip.paste()
+
+def ctrl_v(x):
+    pyperclip.copy(x)
+    pyautogui.hotkey('ctrl','v')
         
 def translate():
     s = input(":")
@@ -123,6 +134,4 @@ def decode():
             else:
                 text +='\n\t'
         print(text)
-    with open("myCode/lib/encode.txt", "wb") as file:
-        file.write(b'')
  

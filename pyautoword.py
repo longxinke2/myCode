@@ -35,6 +35,7 @@ import matplotlib.pyplot as plt
 from IPython.display import display
 from pyautogui import alert as printw
 
+
 def bxwl2(x_group,y_group,max_n):#y_group是生源人数，落实人数，落实率
     p1 = (
         PictorialBar()                       #象形柱状图
@@ -103,7 +104,7 @@ def three_word(start,loop_word_group,end):
         string1+=j
     return string1[:-1]+end
 
-def sum_list(data,ziduan,lst,sum_ziduan):#is_p表示是否对占比求和
+def sum_list(data,ziduan,lst,sum_ziduan):
     if 'proportion' in sum_ziduan:
         return change_to_decimal(sum([change_to_decimal(x,rev=True) for x in data[data[ziduan].isin(lst)][sum_ziduan][data[sum_ziduan]!='-'].tolist()]))
     return data[data[ziduan].isin(lst)][sum_ziduan][data[sum_ziduan]!='-'].sum()
@@ -153,11 +154,11 @@ def bxwl1(x_group,y_group,per):
 def reduce_by_1(string):
     return change_to_decimal(100-float(re.sub('%','',string)))+'%'
 
-# 取data的前三，可自动忽略汇总行和总计行，忽略非数字
+# 取data的前三，可自动忽略汇总行和总计行，忽略非数字,不忽略百分数
 def get_3rd(data,num,not_3=3):#num为倒序排序的依据,不取前三也行
     datat=data.copy()
-    datat= datat[(datat.iloc[:,0] != '汇总') & (datat.iloc[:,0] != '总计') & (datat.iloc[:,1] != '汇总') & (datat.iloc[:,1] != '总计')]
-    datat['temp']=data.apply(lambda x:0 if isinstance(x[num],str) else x[num],axis=1)
+    datat= datat[(datat.iloc[:,0] != '汇总') & (datat.iloc[:,0] != '总计')& (datat.iloc[:,0] != 'left') & (datat.iloc[:,1] != '汇总') & (datat.iloc[:,1] != '总计')]
+    datat['temp']=data.apply(lambda x:(change_to_decimal(x[num],True) if '%' in x[num] else 0) if isinstance(x[num],str) else x[num],axis=1)
     datat=datat.sort_values(by='temp',ascending=False).reset_index(drop=True).drop(['temp'],axis=1)
     return [datat.loc[x].tolist() for x in range(not_3)]
 
@@ -214,11 +215,18 @@ def my_pie(group,title='',js='',radius=["30%", "55%"],center=["25%", "55%"]):
     return b
 
 #竖的，多个不同的列
-def my_bar(x_group,y_group):      
+def my_bar(x_group,y_group,label_is_num=False,formatter='{c}',pos_right="28%"):      #label_is_num=数值标签
     a = Bar().add_xaxis(x_group)
     for index,i in enumerate(y_group):
-        a.add_yaxis(i[0],i[1],bar_width=35,label_opts=opts.LabelOpts(position='top',color=eval(f'color_{index+1}'),formatter='{c}',font_size = 23,font_family = 'Bahnschrift SemiLight Condensed'),itemstyle_opts=opts.ItemStyleOpts(color=eval(f'color_{index+1}')))#设置柱形图样式
-    a.set_global_opts(yaxis_opts=opts.AxisOpts(is_show=False),xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(font_size = 16,font_family = '宋体')),legend_opts=opts.LegendOpts(pos_right="20%")).set_colors([f'{color_1}',f'{color_2}',f'{color_3}',f'{color_4}',f'{color_5}'])
+        a.add_yaxis(i[0],i[1],
+                    bar_width=35,
+                    label_opts=opts.LabelOpts(position='top',color=eval(f'color_{index+1}'),formatter=formatter,font_size = label_is_num and 18 or 23,font_family = label_is_num and 'Times New Roman' or 'Bahnschrift SemiLight Condensed'),itemstyle_opts=opts.ItemStyleOpts(color=eval(f'color_{index+1}')))#设置柱形图样式
+    
+    a.set_global_opts(yaxis_opts=opts.AxisOpts(is_show=False),
+                      xaxis_opts=opts.AxisOpts(
+                          axislabel_opts=opts.LabelOpts(font_size = 16,font_family = '宋体')),
+                      legend_opts=opts.LegendOpts(pos_right=pos_right,item_width=20,item_height=15,
+                                                 textstyle_opts=opts.TextStyleOpts(font_size = 18,font_family = '宋体'))).set_colors([f'{color_1}',f'{color_2}',f'{color_3}',f'{color_4}',f'{color_5}'])#图例格式
     return a
 
 #横的，一个行
@@ -402,7 +410,8 @@ def add_table(data1,need_1st_merge=False):#need_1st_merge:第一列需要合并�
         for i in get_og_name(data,True)+['proportion']:
             for j in result:
                 group1.append(change_to_decimal(sum(data.loc[j][i].apply(lambda x:change_to_decimal(x,True)).tolist()))+'%')
-        data.loc[data1[cn1]=='汇总',i]=group1
+            data.loc[data1[cn1]=='汇总',i]=group1
+            group1=[]
 
     table = document.add_table(rows=data.shape[0],cols=data.shape[1],style="表格-全部")#建立表格
     for i in range(data.shape[0]):
@@ -501,7 +510,7 @@ def get_group_order_table(data,string,string1='',other_groupby='',order=True,nee
             data2 = pd.DataFrame({x:[L(string)] if x==string or x==string1 else 'num' in x and ['人数'] or ['占比'] for x in data1.columns})
         
     if need_sum:
-        dict3={x:'总计' if x==string else(x==string1 and 'left' or 'num' in x and [data1[x].sum()] or ['100.00%']) for x in data1.columns}
+        dict3={x:'总计' if x==string else(x==string1 and 'left' or 'num' in x and [int(data1[x].sum()/2)] or ['100.00%']) for x in data1.columns}
         data3 = pd.DataFrame(dict3)
         
     #合并
@@ -562,7 +571,7 @@ def get_lighter_color(*args):
     return colors[::int(len(colors)/10)][:]
 
 def change_to_decimal(x,rev=False):#rev=由string转回float
-    return rev and float(re.sub('%','',x)) or str(Decimal(x).quantize(Decimal("0.00")))
+    return  (float(re.sub('%','',x)) if x!='-' else 0) if rev else str(Decimal(x).quantize(Decimal("0.00")))
 
 # 对data按照string分组
 def groupby_data(data,string,string1='',other_groupby=''): 
@@ -609,13 +618,12 @@ def order_table(table,result,string,group={},string1=''):
         try:
             for i in list(table[string]):
                 list1.append(re.search(i, order_str).span(0)[0])
+            table['order'] = list1
+            table.sort_values(by=string1!='' and ['order','汇总'] or 'order',inplace=True)
+            table.drop('order',axis=1,inplace=True)
         except:
             print(f'未在表格中找到{L(string)}字段')
             if string=='xl':xy_order_str=''
-            return
-        table['order'] = list1
-        table.sort_values(by=string1!='' and ['order','汇总'] or 'order',inplace=True)
-        table.drop('order',axis=1,inplace=True)
     if a[0]=='num_down':
         table['汇总']=2-table['汇总']
         table.sort_values(by=string1!='' and [string,'汇总','num'] or 'num',inplace=True,ascending=False)
