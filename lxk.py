@@ -15,6 +15,15 @@ from PIL import Image
 from IPython.display import clear_output
 import win32com.client
 import os
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
+import time
+import datetime
+from email.utils import formataddr
+from email.header import Header
+import xlwings as xw
 
 def open_zb():
     # 主要用于查看改动的效果
@@ -135,3 +144,126 @@ def decode():
                 text +='\n\t'
         print(text)
  
+def get_week_of_month(date):
+    first_day = date.replace(day=1)
+    dom = date.day
+    adjusted_dom = dom + first_day.weekday()
+    if adjusted_dom <= 7:
+        return 1
+    elif adjusted_dom <= 14:
+        return 2
+    elif adjusted_dom <= 21:
+        return 3
+    elif adjusted_dom <= 28:
+        return 4
+    else:
+        return 5
+
+# date: "2022-08-09"
+def get_current_week():
+    monday, sunday = datetime.date.today(), datetime.date.today()
+    month = datetime.date.today().month
+    one_day = datetime.timedelta(days=1)
+    while monday.weekday() != 0:
+        monday -= one_day
+    while sunday.weekday() != 6:
+        sunday += one_day
+    today = datetime.date.today()
+    week_num= get_week_of_month(today)
+    
+    # return monday, sunday
+    # 返回时间字符串
+    return '龙辛柯-周报('+ datetime.datetime.strftime(monday, "%Y年%m月%d日") + '-' + datetime.datetime.strftime(sunday, "%Y年%m月%d日")\
+    +f'){month}月第{week_num}周'
+
+def send_myemail():
+    # 配置邮箱及密码
+    from_mail_name = formataddr((Header('龙辛柯','utf-8').encode(), 'longxk@bibibi.net'))
+    to_mail_name = '陈静 <chenj@bibibi.net>; 高玉 <gaoyu@bibibi.net>; 史册 <shice@bibibi.net>; 夏超群 <xiacq@bibibi.net>; 曾诚睿 <zengcr@bibibi.net>; 朱黎 <zhul@bibibi.net>; 龙辛柯 <longxk@bibibi.net>'
+    from_mail = 'longxk@bibibi.net'
+    from_mail_password = '740926Lxk'
+#     to_mail = ['longxk@bibibi.net','2245247439@qq.com']
+    to_mail =['sunb@bibibi.net','hr@bibibi.net','chenj@bibibi.net','longxk@bibibi.net','zengcr@bibibi.net','gaoyu@bibibi.net','shice@bibibi.net','xiacq@bibibi.net','zhul@bibibi.net']
+    # 截图路径
+    pic_file = r'lib/周报截图.png'
+    
+    app = xw.App(visible=True, add_book=False)
+    wb = app.books.open('lib/研究院工作周报-龙辛柯.xlsx')
+    sheet = wb.sheets[0]
+    sheet['A1'].value = get_current_week()
+
+    # 写完截图
+    all = sheet.used_range    # 获取有内容的range
+    all.api.CopyPicture()    # 复制图片区域
+    sheet.api.Paste()    # 粘贴
+    pic = sheet.pictures[0]    # 当前图片
+    pic.api.Copy()    # 复制图片
+    img = ImageGrab.grabclipboard()    # 获取剪贴板的图片数据
+    # 有一个缓存的时间
+    time.sleep(5)
+    img.save(pic_file)    # 保存图片
+    pic.delete()    # 删除sheet上的图片
+
+    wb.save() # 保存文件
+    wb.close() # 关闭文件
+    app.quit() # 关闭程序
+    
+    curr_time = datetime.datetime.now()
+    time_str = curr_time.strftime('%m%d')
+    
+    
+    # 设置总的邮件体对象，对象类型为mixed
+    msg = MIMEMultipart('mixed')
+
+    # 邮件的发件人及收件人信息
+    msg['From'] = from_mail_name
+    msg['To'] = to_mail_name
+    msg['Cc'] = '孙柏 <sunb@bibibi.net>; hr <hr@bibibi.net>'
+    # 邮件的主题
+    msg['Subject'] = f'研究院工作周报-龙辛柯-{time_str}'
+
+    # 构造文本内容
+#     text_info = 'hello world'
+#     text_sub = MIMEText(text_info, 'plain', 'utf-8')
+#     msg.attach(text_sub)
+
+    # 构造超文本
+    html_info = """
+    <div>各位同事：</div><div>&nbsp; &nbsp; &nbsp; 大家好！这是我本周的工作总结，请查收！</div>
+    <div>
+    <sign signid="1">
+    <div>
+    <font>祝：身体健康！<br></font>
+    <font><br>
+    <img src="cid:image1"><br>
+    </font>
+    <div style="color:#909090;font-family:Arial Narrow;font-size:12px"></div>
+    </div>
+    <div style="font-size:14px;font-family:Verdana;color:#000;">
+    <div>
+    <img src="https://exmail.qq.com/cgi-bin/viewfile?type=signature&amp;picid=ZX0228-TpCGSnFBZkAbzAtofQjgIcm&amp;uin=3341171678" onerror=""><font size="4">长沙市云研网络科技有限公司</font></div><div><table id="QMEditorArea" class="bd" cellpadding="0" cellspacing="0" style="border: 1px solid rgb(220, 224, 225); color: rgb(0, 0, 0); font-family: &quot;Helvetica Neue&quot;, Arial, &quot;PingFang SC&quot;, &quot;Hiragino Sans GB&quot;, STHeiti, &quot;Microsoft YaHei&quot;, sans-serif; font-size: 12px; background-color: rgb(245, 245, 245); min-width: 450px;"><tbody><tr><td class="bizCardContainer_td" style="-webkit-font-smoothing: antialiased; background: rgb(255, 255, 255); padding: 5px; line-height: 1.5;"><div id="signPreview" style="height: auto; min-height: 80px; padding: 5px;"><div><b><font size="4">龙辛柯</font><font size="2"> 研究院</font></b></div><div>地址：湖南省长沙市天心区芙蓉南路二段390号湖南长沙人力资源产业园B座6层</div><div>电话：17620085592</div><div>E-mail：longxk@bibibi.net</div></div></td></tr></tbody></table></div>
+    </div></sign></div><div>&nbsp;</div><div><tincludetail></tincludetail></div><!--<![endif]-->
+    """
+    html_sub = MIMEText(html_info, 'html', 'utf-8')
+    # 如果不加下边这行代码的话，上边的文本是不会正常显示的，会把超文本的内容当做文本显示——法男女搭配，加了就作为附近上传了，别加
+   #html_sub["Content-Disposition"] = 'attachment; filename="csdn.html"'
+    # 把构造的内容写到邮件体中
+    msg.attach(html_sub)
+    
+    #添加图片到正文
+    with open(pic_file,'rb') as image:
+        image_info = MIMEImage(image.read())
+        image_info.add_header('Content-Id','<image1>')
+        msg.attach(image_info)
+
+    # 构造附件
+    txt_file = open(r'lib/研究院工作周报-龙辛柯.xlsx', 'rb').read()
+    txt = MIMEText(txt_file, 'base64', 'utf-8')
+    txt["Content-Type"] = 'application/octet-stream'
+    txt.add_header('Content-Disposition', 'attachment', filename=f'研究院工作周报-龙辛柯-{time_str}.xlsx')
+    msg.attach(txt)
+    server = smtplib.SMTP('smtp.exmail.qq.com')
+    server.login(from_mail,from_mail_password)
+    server.sendmail(from_mail,to_mail,msg.as_string())
+    server.quit()
+    return
