@@ -510,7 +510,7 @@ def get_group_order_table(data,string,string1='',other_groupby='',order=True,nee
             data2 = pd.DataFrame({x:[L(string)] if x==string or x==string1 else 'num' in x and ['人数'] or ['占比'] for x in data1.columns})
         
     if need_sum:
-        dict3={x:'总计' if x==string else(x==string1 and 'left' or 'num' in x and [int(data1[x].sum()/2)] or ['100.00%']) for x in data1.columns}
+        dict3={x:['总计'] if x==string else(x==string1 and ['left'] or ['num'] in x and [int(data1[x].sum()/2)] or ['100.00%']) for x in data1.columns}
         data3 = pd.DataFrame(dict3)
         
     #合并
