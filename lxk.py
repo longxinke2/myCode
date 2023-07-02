@@ -143,7 +143,7 @@ def decode():
             else:
                 text +='\n\t'
         print(text)
- 
+        
 def get_week_of_month(date):
     first_day = date.replace(day=1)
     dom = date.day
