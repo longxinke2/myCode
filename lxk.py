@@ -24,7 +24,15 @@ import datetime
 from email.utils import formataddr
 from email.header import Header
 import xlwings as xw
+import pyperclip
+import keyboard
+import pyautogui
 
+def f2_shuru(i):
+    keyboard.wait('f2')
+    pyperclip.copy(i)
+    pyautogui.hotkey('ctrl','v')
+    
 def open_zb():
     # 主要用于查看改动的效果
     # 创建Word应用程序对象
