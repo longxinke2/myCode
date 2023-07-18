@@ -33,10 +33,9 @@ def f2_shuru(i):
     pyperclip.copy(i)
     pyautogui.hotkey('ctrl','v')
     
-def open_zb():
+def open_zb(path='lib/研究院工作周报-龙辛柯.xlsx'):
     # 主要用于查看改动的效果
     # 创建Word应用程序对象
-    path='lib/研究院工作周报-龙辛柯.xlsx'
     excel = win32com.client.Dispatch('Excel.Application')
     excel.Visible = True
     path=os.path.abspath(path)# 不知道为什么当前路径不行，要完整路径
@@ -110,9 +109,15 @@ def encode(clear=False):
     public_key = serialization.load_pem_public_key(
         public_key_bytes
     )
+    temp=''
     while True:
         with open("lib/encode.txt", "ab") as file:
-            plaintext =input().encode()
+            x=input()
+            if x=='show':
+                print(temp)
+                continue
+            temp=x
+            plaintext =x.encode()
             # 使用公钥加密
             ciphertext = public_key.encrypt(
                 plaintext,
