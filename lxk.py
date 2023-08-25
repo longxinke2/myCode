@@ -212,6 +212,7 @@ def send_myemail(timet=0):
     sheet.api.Paste()    # 粘贴
     pic = sheet.pictures[0]    # 当前图片
     pic.api.Copy()    # 复制图片
+    time.sleep(3)
     img = ImageGrab.grabclipboard()    # 获取剪贴板的图片数据
     # 有一个缓存的时间
     time.sleep(5)
