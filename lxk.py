@@ -190,7 +190,6 @@ def get_current_week():
     +f'){month}月第{week_num}周'
 
 def send_myemail(timet=0):
-    time.sleep(timet)
     # 配置邮箱及密码
     from_mail_name = formataddr((Header('龙辛柯','utf-8').encode(), 'longxk@bibibi.net'))
     to_mail_name = '陈静 <chenj@bibibi.net>; 高玉 <gaoyu@bibibi.net>; 史册 <shice@bibibi.net>; 夏超群 <xiacq@bibibi.net>; 曾诚睿 <zengcr@bibibi.net>; 朱黎 <zhul@bibibi.net>; 龙辛柯 <longxk@bibibi.net>'
@@ -222,6 +221,8 @@ def send_myemail(timet=0):
     wb.save() # 保存文件
     wb.close() # 关闭文件
     app.quit() # 关闭程序
+    
+    time.sleep(timet)
     
     curr_time = datetime.datetime.now()
     time_str = curr_time.strftime('%m%d')
