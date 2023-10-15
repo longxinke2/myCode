@@ -192,7 +192,7 @@ def get_current_week():
 def send_myemail(timet=0):
     # 配置邮箱及密码
     from_mail_name = formataddr((Header('龙辛柯','utf-8').encode(), 'longxk@bibibi.net'))
-    to_mail_name = '陈静 <chenj@bibibi.net>; 高玉 <gaoyu@bibibi.net>; 史册 <shice@bibibi.net>; 夏超群 <xiacq@bibibi.net>; 曾诚睿 <zengcr@bibibi.net>; 朱黎 <zhul@bibibi.net>; 龙辛柯 <longxk@bibibi.net>'
+    to_mail_name = '陈静 <chenj@bibibi.net>; 高玉 <gaoyu@bibibi.net>; 史册 <shice@bibibi.net>; 夏超群 <xiacq@bibibi.net>; 曾诚睿 <zengcr@bibibi.net>; 朱黎 <zhul@bibibi.net>; 龙辛柯 <longxk@bibibi.net>; 李畅畅 <lichangchang@bibibi.net>; 满延春 <manyc@bibibi.net>; 黄智祥 <huangzx@bibibi.net>; 李立川 <lilc@bibibi.net>'
     from_mail = 'longxk@bibibi.net'
     from_mail_password = '740926Lxk'
 #     to_mail = ['longxk@bibibi.net','2245247439@qq.com']
@@ -261,7 +261,7 @@ def send_myemail(timet=0):
     </div></sign></div><div>&nbsp;</div><div><tincludetail></tincludetail></div><!--<![endif]-->
     """
     html_sub = MIMEText(html_info, 'html', 'utf-8')
-    # 如果不加下边这行代码的话，上边的文本是不会正常显示的，会把超文本的内容当做文本显示——法男女搭配，加了就作为附近上传了，别加
+    # 如果不加下边这行代码的话，上边的文本是不会正常显示的，会把超文本的内容当做文本显示——法男女搭配，加了就作为附件上传了，别加
    #html_sub["Content-Disposition"] = 'attachment; filename="csdn.html"'
     # 把构造的内容写到邮件体中
     msg.attach(html_sub)
